@@ -16,10 +16,10 @@ class GeneticAlgorithm:
         对数值组x1,x2进行编码
         :return:以整数表示的编码值
         """
-        x1_int = int((10 ** self.precision) * x1) - self.x1_range[0]
-        x2_int = int((10 ** self.precision) * x2) - self.x2_range[0]
-        x1_code = x1_int << self.x2_bit_length
-        x2_code = x2_int & ((1 << self.x2_bit_length) - 1)
+        x1_iv = x1 - self.x1_range[0]
+        x2_iv = x2 - self.x2_range[0]
+        x1_code = x1_iv << self.x2_bit_length
+        x2_code = x2_iv & ((1 << self.x2_bit_length) - 1)
         return x1_code + x2_code
 
     def decode(self, code) -> list[float]:
@@ -28,9 +28,9 @@ class GeneticAlgorithm:
         :param code: 编码值
         :return: 数值组[x1,x2]
         """
-        x1_int = code >> self.x2_bit_length
-        x2_int = code & ((1 << self.x2_bit_length) - 1)
-        return [x1_int / (10 ** self.precision), x2_int / (10 ** self.precision)]
+        x1 = (code >> self.x2_bit_length) + self.x1_range[0]
+        x2 = (code & ((1 << self.x2_bit_length) - 1)) + self.x2_range[0]
+        return [x1, x2]
 
     def __init__(self, init_size: int, precision: int, x1_range: list[float], x2_range: list[float],
                  mutations_probability: float, evaluate: typing.Callable[[int, int], int]) -> None:
@@ -57,8 +57,8 @@ class GeneticAlgorithm:
         self.x2_bit_length = abs(x2_range[0] - x2_range[1]).bit_length()
 
         for i in range(init_size):
-            self.population.append([random.randint(x1_range[0], x1_range[1]) * (10 ** self.precision),
-                                    random.randint(x2_range[0], x2_range[1]) * (10 ** self.precision)])
+            self.population.append([random.randint(x1_range[0], x1_range[1]),
+                                    random.randint(x2_range[0], x2_range[1])])
         self.evaluate = evaluate
 
     def run(self, depth: int, version: bool = False) -> list[int]:
@@ -69,14 +69,21 @@ class GeneticAlgorithm:
         :return: 一个列表，包含当下最大值的详细信息：[x1,x2,value]
         """
         for i in range(depth):
-            value = [self.evaluate(self.population[j][0], self.population[j][1])
+            value = [self.evaluate(self.population[j][0] / (10 ** self.precision),
+                                   self.population[j][1] / (10 ** self.precision))
                      for j in range(len(self.population))]
+            if min(value) < 0:
+                value = [(0 - min(value)) + v for v in value]
+                min_value = min(value)
+            else:
+                min_value = 0
+
             if version:
                 print(f"depth = {i}")
                 for k in range(len(self.population)):
-                    print(f"x1 = {round(self.population[k][0], self.precision)}, "
-                          f"x2 = {round(self.population[k][1], self.precision)},\t"
-                          f"value = {value[k]}")
+                    print(f"x1 = {round(self.population[k][0] / (10 ** self.precision), self.precision)}, "
+                          f"x2 = {round(self.population[k][1] / (10 ** self.precision), self.precision)},\t"
+                          f"value = {value[k] + min_value}")
                 print("\n")
             chromosome = random.choices(self.population, weights=value, k=len(self.population))
             codes = [self.encode(c[0], c[1]) for c in chromosome]
@@ -96,8 +103,20 @@ class GeneticAlgorithm:
                 sons_codes.append(son1)
                 sons_codes.append(son2)
             self.population = [self.decode(code) for code in sons_codes]
-
-        max_index, max_value = max(enumerate([self.evaluate(p[0], p[1]) for p in self.population]))
-        return [round(self.population[max_index][0], self.precision)
-            , round(self.population[max_index][1], self.precision)
+            for p in self.population:
+                if p[0] > self.x1_range[1]:
+                    p[0] = self.x1_range[1] - random.randint(0, 10 ** self.precision)
+                if p[1] > self.x2_range[1]:
+                    p[1] = self.x2_range[1] - random.randint(0, 10 ** self.precision)
+        if version:
+            print(f"depth = {depth}")
+            for k in range(len(self.population)):
+                print(f"x1 = {round(self.population[k][0] / (10 ** self.precision), self.precision)}, "
+                      f"x2 = {round(self.population[k][1] / (10 ** self.precision), self.precision)},\t"
+                      f"value = {self.evaluate(self.population[k][0] / (10 ** self.precision), self.population[k][1] / (10 ** self.precision))}")
+        max_index, max_value = max(
+            enumerate([self.evaluate(p[0] / (10 ** self.precision), p[1] / (10 ** self.precision))
+                       for p in self.population]), key=lambda x: x[1])
+        return [round(self.population[max_index][0] / (10 ** self.precision), self.precision)
+            , round(self.population[max_index][1] / (10 ** self.precision), self.precision)
             , max_value]
