@@ -18,8 +18,8 @@ class GeneticAlgorithm:
         """
         x1_iv = x1 - self.x1_range[0]
         x2_iv = x2 - self.x2_range[0]
-        x1_code = x1_iv << self.x2_bit_length
-        x2_code = x2_iv & ((1 << self.x2_bit_length) - 1)
+        x1_code = int(x1_iv) << self.x2_bit_length
+        x2_code = int(x2_iv) & ((1 << self.x2_bit_length) - 1)
         return x1_code + x2_code
 
     def decode(self, code) -> list[float]:
@@ -37,7 +37,7 @@ class GeneticAlgorithm:
         """
         初始化遗传种群类，采用加权轮盘式的自然选择
         :param init_size: 初始种群数量，要求为偶数。如传入奇数，会将其+1
-        :param prec: 精度值，为整数，表示精确到小数点后第几位
+        :param precision: 精度值，为整数，表示精确到小数点后第几位
         :param x1_range:  [0]标识x1的最小值，[1]标识x1的最大值
         :param x2_range: [0]标识x2的最小值，[1]标识x2的最大值
         :param mutations_probability: 突变的概率，应该为0~1之间的小数
@@ -111,12 +111,14 @@ class GeneticAlgorithm:
         if version:
             print(f"depth = {depth}")
             for k in range(len(self.population)):
+                v = self.evaluate(self.population[k][0] / (10 ** self.precision),
+                                  self.population[k][1] / (10 ** self.precision))
                 print(f"x1 = {round(self.population[k][0] / (10 ** self.precision), self.precision)}, "
                       f"x2 = {round(self.population[k][1] / (10 ** self.precision), self.precision)},\t"
-                      f"value = {self.evaluate(self.population[k][0] / (10 ** self.precision), self.population[k][1] / (10 ** self.precision))}")
+                      f"value = {v}")
         max_index, max_value = max(
             enumerate([self.evaluate(p[0] / (10 ** self.precision), p[1] / (10 ** self.precision))
                        for p in self.population]), key=lambda x: x[1])
-        return [round(self.population[max_index][0] / (10 ** self.precision), self.precision)
-            , round(self.population[max_index][1] / (10 ** self.precision), self.precision)
-            , max_value]
+        return [round(self.population[max_index][0] / (10 ** self.precision), self.precision),
+                round(self.population[max_index][1] / (10 ** self.precision), self.precision),
+                max_value]
