@@ -11,7 +11,7 @@ class GeneticAlgorithm:
     x1_range = []
     x2_range = []
 
-    def encode(self, x1: float, x2: float) -> int:
+    def __encode(self, x1: float, x2: float) -> int:
         """
         对数值组x1,x2进行编码
         :return:以整数表示的编码值
@@ -22,7 +22,7 @@ class GeneticAlgorithm:
         x2_code = int(x2_iv) & ((1 << self.x2_bit_length) - 1)
         return x1_code + x2_code
 
-    def decode(self, code) -> list[float]:
+    def __decode(self, code) -> list[float]:
         """
         将编码解码成数值组x1,x2
         :param code: 编码值
@@ -86,7 +86,7 @@ class GeneticAlgorithm:
                           f"value = {value[k] + min_value}")
                 print("\n")
             chromosome = random.choices(self.population, weights=value, k=len(self.population))
-            codes = [self.encode(c[0], c[1]) for c in chromosome]
+            codes = [self.__encode(c[0], c[1]) for c in chromosome]
             sons_codes = []
             for j in range(0, len(codes), 2):
                 father = codes[j]
@@ -102,7 +102,7 @@ class GeneticAlgorithm:
                     son2 = son2 ^ (1 << mutations_digit)
                 sons_codes.append(son1)
                 sons_codes.append(son2)
-            self.population = [self.decode(code) for code in sons_codes]
+            self.population = [self.__decode(code) for code in sons_codes]
             for p in self.population:
                 if p[0] > self.x1_range[1]:
                     p[0] = self.x1_range[1] - random.randint(0, 10 ** self.precision)
