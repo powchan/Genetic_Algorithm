@@ -26,4 +26,3 @@ class GeneticAlgorithm:
             chromosome = random.choices(self.population, weights=value, k=len(self.population))
             chromosome = [i/self.precision for i in chromosome]
             codes = [(i[0] << self.x2_bit_length) | i[1] for i in chromosome]
-
