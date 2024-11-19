@@ -33,7 +33,7 @@ class GeneticAlgorithm:
         return [x1, x2]
 
     def __init__(self, init_size: int, precision: int, x1_range: list[float], x2_range: list[float],
-                 mutations_probability: float, evaluate: typing.Callable[[int, int], int]) -> None:
+                 mutations_probability: float, evaluate: typing.Callable[[float, float], float]) -> None:
         """
         初始化遗传种群类，采用加权轮盘式的自然选择
         :param init_size: 初始种群数量，要求为偶数。如传入奇数，会将其+1
@@ -122,3 +122,13 @@ class GeneticAlgorithm:
         return [round(self.population[max_index][0] / (10 ** self.precision), self.precision),
                 round(self.population[max_index][1] / (10 ** self.precision), self.precision),
                 max_value]
+
+    def tournament_selection(self, k=3):
+        # 进行k次锦标赛选择，返回被选中的个体
+        selected = []
+        for i in range(len(self.population)):
+            tournament = random.sample(self.population, k)
+            tournament_fitness = [self.evaluate(ind[0], ind[1]) for ind in tournament]
+            winner = tournament[tournament_fitness.index(max(tournament_fitness))]
+            selected.append(winner)
+        return selected
